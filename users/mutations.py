@@ -45,3 +45,32 @@ class LoginMutation(graphene.Mutation):
             return LoginMutation(token=token, pk=user.pk)
         else:
             return LoginMutation(error="Wrong username or password")
+
+
+class EditProfileMutation(graphene.Mutation):
+    
+    class Arguments:
+        email = graphene.String()
+        first_name = graphene.String()
+        last_name = graphene.String()
+
+    ok = graphene.Boolean()
+    error = graphene.String()
+
+    def mutate(self, info, email=None, first_name=None, last_name=None):
+        user = info.context.user
+        if not user.is_authenticated:
+            raise Exception("You need to be logged in")
+        if email is not None and email != user.email:
+            try:
+                User.objects.get(email=email)
+                return EditProfileMutation(ok=False, error="That email is taken")
+            except User.DoesNotExist:
+                user.email = email
+        if first_name is not None:
+            user.first_name = first_name
+        if last_name is not None:
+            user.last_name = last_name
+        user.save()
+        return EditProfileMutation(ok=True)
+        
